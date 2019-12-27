@@ -1,0 +1,21 @@
+apiVersion: skaffold/v2alpha1
+kind: Config
+metadata:
+  name: initrd-build
+build:
+  artifacts:
+    - image: docker-registry.csikoste.com/initrd-deploy-arm64
+      kaniko:
+        image: matefarkas/kaniko-executor:v0.15.0-arm64
+  cluster:
+    dockerConfig:
+      secretName: docker-registry-kanikosecret
+
+profiles:
+  - name: arm64
+    patches:
+      - op: add
+        path: /build/artifacts/0/kaniko/buildArgs
+        value:
+          ALPINE_VERSION: latest@sha256:892105a25acfbcb693eba42428b5a7daa63e20a1b1c85bd225ef36f447db9182
+          KERNEL_PKG: linux-rpi4

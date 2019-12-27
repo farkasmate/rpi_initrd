@@ -1,0 +1,39 @@
+#!/bin/busybox sh
+
+set -x
+
+/bin/busybox --install -s /bin/
+
+mkdir -p /dev/ /mnt/ /proc/ /sys/ /tmp/
+
+mount -t devtmpfs devtmpfs /dev/
+mount -t proc     proc     /proc/
+mount -t sysfs    sysfs    /sys/
+mount -t tmpfs    tmpfs    /tmp/
+
+insmod /lib/modules/libiscsi.ko
+insmod /lib/modules/libiscsi_tcp.ko
+insmod /lib/modules/iscsi_tcp.ko
+
+sleep 2
+
+get_param() {
+  sed "s/^.*$1=\([^ ]*\).*$/\1/" /proc/cmdline
+}
+
+ip address add $(get_param NETWORK_CIDR) dev eth0
+ip link set eth0 up
+ip route add default via $(get_param NETWORK_GW)
+
+iscsistart --tgpt 1 \
+  --initiatorname iqn.1993-08.org.debian:$(grep ^Serial /proc/cpuinfo | rev | cut -c1-8 | rev) \
+  --targetname $(get_param ISCSI_TARGET_NAME) \
+  --address $(get_param ISCSI_TARGET_IP) \
+  --username $(get_param ISCSI_USERNAME) \
+  --password $(get_param ISCSI_PASSWORD)
+
+sleep 2
+
+mount /dev/sda1 /mnt
+
+exec busybox switch_root /mnt/ /sbin/init 5

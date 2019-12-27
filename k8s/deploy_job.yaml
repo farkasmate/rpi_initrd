@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: initrd-deploy
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 120
+  template:
+    spec:
+      containers:
+        - name: deploy
+          image: docker-registry.csikoste.com/initrd-deploy-arm64
+      imagePullSecrets:
+        - name: docker-registry-dockerconfigjson
+      restartPolicy: Never
